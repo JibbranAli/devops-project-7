@@ -414,7 +414,7 @@ flowchart TB
 6. You get the result back
 7. Everything is tracked in the monitoring dashboard
 
-## Getting Started (Super Easy!)
+## Getting Started
 
 ### What You Need
 
@@ -422,32 +422,427 @@ flowchart TB
 - Ability to run commands as admin (sudo)
 - Internet connection
 
-That's it! The scripts handle everything else.
+Choose your installation method below: **Automated** (fast) or **Manual** (step-by-step).
 
-### Installation - Just 3 Commands!
+---
 
-**Step 1: Make the scripts runnable**
+## Installation Method 1: Automated (Recommended) ⚡
+
+This is the fastest way - just 3 commands and you're done!
+
+### Step 1: Make Scripts Executable
 ```bash
 chmod +x *.sh
 ```
 
-**Step 2: Install everything (takes about 5 minutes)**
+### Step 2: Run Installer (5 minutes)
 ```bash
 ./install.sh
 ```
 
-This installs Python, Docker, and all the other stuff you need. Grab a coffee! ☕
+This automatically installs:
+- Python 3 and pip
+- Docker and Docker Compose  
+- All Python dependencies
+- System packages
 
-**Step 3: Start everything up**
+Grab a coffee! ☕
+
+### Step 3: Start Everything
 ```bash
 ./run_demo.sh
 ```
 
-This trains your models and starts all the services. Takes about 2 minutes.
+This will:
+- Train both ML models
+- Build Docker containers
+- Start all services
+
+Takes about 2 minutes.
+
+### Step 4: Test Everything & Get Your URLs
+```bash
+./test_everything.sh
+```
+
+This comprehensive test will:
+- Test all 10 components
+- **Automatically detect your public IP**
+- Show you the correct URLs (not localhost!)
+- Verify A/B testing works
+- Check monitoring
+- Measure performance
+
+**Example Output:**
+```
+========================================
+Detected IP Address: 54.123.45.67
+========================================
+
+Service URLs:
+  API:        http://54.123.45.67:5000
+  UI:         http://54.123.45.67:8501
+  Prometheus: http://54.123.45.67:9090
+
+Test the API:
+  curl -X POST http://54.123.45.67:5000/predict \
+    -H "Content-Type: application/json" \
+    -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
+```
+
+**Copy these URLs!** You'll use them to access your services.
+
+---
+
+## Installation Method 2: Manual (Step-by-Step) 📝
+
+Prefer to see exactly what's happening? Follow these manual steps.
+
+### Step 1: Update System
+
+```bash
+# Update package manager
+sudo yum update -y
+```
+
+### Step 2: Install Python 3
+
+```bash
+# Install Python 3 and development tools
+sudo yum install -y python3 python3-pip python3-devel gcc
+
+# Verify installation
+python3 --version  # Should show Python 3.x
+pip3 --version     # Should show pip version
+```
+
+### Step 3: Install Docker
+
+```bash
+# Install Docker
+sudo yum install -y docker
+
+# Start Docker service
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Add your user to docker group (so you don't need sudo)
+sudo usermod -aG docker $USER
+
+# Verify Docker installation
+docker --version
+```
+
+**⚠️ Important:** After adding yourself to the docker group, **log out and log back in** for it to take effect!
+
+### Step 4: Install Docker Compose
+
+```bash
+# Download Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+# Make it executable
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Create symlink
+sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+
+# Verify installation
+docker-compose --version
+```
+
+### Step 5: Install Python Dependencies
+
+```bash
+# Upgrade pip
+pip3 install --user --upgrade pip
+
+# Install from requirements file
+pip3 install --user -r requirements.txt
+
+# Or install packages individually:
+pip3 install --user flask==3.0.0 scikit-learn==1.3.2 numpy==1.24.3 \
+  pandas==2.0.3 streamlit==1.29.0 prometheus-client==0.19.0 \
+  requests==2.31.0 pytest==7.4.3 joblib==1.3.2
+```
+
+### Step 6: Train the Models
+
+```bash
+# Train both model versions
+python3 app/train_model.py
+```
+
+**Expected Output:**
+```
+Loading Iris dataset...
+Training Model v1 (Random Forest with 50 estimators)...
+Model v1 Accuracy: 0.9667
+Training Model v2 (Random Forest with 100 estimators)...
+Model v2 Accuracy: 0.9667
+Training complete!
+```
+
+### Step 7: Build Docker Containers
+
+```bash
+# Build the Flask API container
+docker build -f docker/Dockerfile.api -t mlops-flask-api:latest .
+
+# Build the Streamlit UI container
+docker build -f docker/Dockerfile.streamlit -t mlops-streamlit-ui:latest .
+
+# Verify images were created
+docker images | grep mlops
+```
+
+### Step 8: Start All Services
+
+```bash
+# Start everything with Docker Compose
+docker-compose up -d
+
+# Check that all containers are running
+docker-compose ps
+```
+
+**Expected Output:**
+```
+NAME                  STATUS
+mlops-flask-api       Up
+mlops-streamlit-ui    Up
+mlops-prometheus      Up
+```
+
+### Step 9: Get Your Public IP Address
+
+```bash
+# Method 1: AWS metadata service (if on EC2)
+curl -s http://169.254.169.254/latest/meta-data/public-ipv4
+
+# Method 2: External service
+curl -s https://api.ipify.org
+
+# Method 3: Use the test script
+./test_everything.sh
+```
+
+**Save this IP!** You'll use it to access your services.
+
+### Step 10: Test Your Installation
+
+```bash
+# Make test script executable
+chmod +x test_everything.sh
+
+# Run comprehensive tests
+./test_everything.sh
+```
+
+This will show you all your service URLs with the correct public IP address.
+
+---
+
+## Accessing Your Services
+
+After installation (either method), you'll have three services running:
+
+### 1. Web Interface (Streamlit)
+```
+http://YOUR-PUBLIC-IP:8501
+```
+- Open this in your browser
+- Interactive interface for making predictions
+- See which model version was used
+- View usage statistics
+
+### 2. API (Flask)
+```
+http://YOUR-PUBLIC-IP:5000
+```
+- REST API for programmatic access
+- Endpoints: `/predict`, `/health`, `/config`, `/metrics`
+
+### 3. Monitoring (Prometheus)
+```
+http://YOUR-PUBLIC-IP:9090
+```
+- View metrics and performance data
+- Query prediction counts, latency, errors
+- Monitor A/B test distribution
+
+### Getting Your Public IP
+
+**Method 1: Use Our Helper Script (Easiest)**
+```bash
+chmod +x get_ip.sh
+./get_ip.sh
+```
+
+This automatically detects your IP and shows you all the URLs!
+
+**Method 2: AWS Metadata Service (EC2 only)**
+```bash
+curl -s http://169.254.169.254/latest/meta-data/public-ipv4
+```
+
+**Method 3: External Service**
+```bash
+curl -s https://api.ipify.org
+```
+
+**Method 4: Run Full Test**
+```bash
+./test_everything.sh
+# Shows IP at the top of output
+```
+
+---
+
+## Verifying Installation
+
+### Quick Check
+```bash
+# Check if services are running
+docker-compose ps
+
+# All three should show "Up"
+```
+
+### Comprehensive Check
+```bash
+# Run full system test
+./test_everything.sh
+
+# Should show all green checkmarks
+```
+
+### Manual API Test
+```bash
+# Replace YOUR-IP with your actual public IP
+curl http://YOUR-IP:5000/health
+
+# Expected response:
+# {"status":"healthy","timestamp":"2025-11-22T10:30:45","models_loaded":true}
+```
+
+### Make a Test Prediction
+```bash
+# Replace YOUR-IP with your actual public IP
+curl -X POST http://YOUR-IP:5000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
+
+# Expected response:
+# {"prediction":0,"model_version":"v1","timestamp":"...","latency_ms":12.5}
+```
+
+---
+
+## Troubleshooting Installation
+
+### Docker Permission Denied
+```bash
+# Add yourself to docker group
+sudo usermod -aG docker $USER
+
+# Log out and log back in for it to take effect
+exit
+# Then SSH back in
+```
+
+### Ports Already in Use
+```bash
+# Stop existing services
+docker-compose down
+
+# Or kill specific port
+sudo lsof -ti:5000 | xargs kill -9
+sudo lsof -ti:8501 | xargs kill -9
+sudo lsof -ti:9090 | xargs kill -9
+```
+
+### Models Not Found
+```bash
+# Train models manually
+python3 app/train_model.py
+
+# Restart API
+docker-compose restart flask-api
+```
+
+### Services Won't Start
+```bash
+# Check logs for errors
+docker-compose logs
+
+# Check specific service
+docker-compose logs flask-api
+
+# Rebuild containers from scratch
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+### Can't Access from Browser
+
+**Check 1: Services Running?**
+```bash
+docker-compose ps
+# All should show "Up"
+```
+
+**Check 2: Using Public IP?**
+```bash
+# Get your public IP
+curl -s https://api.ipify.org
+
+# Don't use localhost or 127.0.0.1!
+```
+
+**Check 3: Security Group (AWS)**
+- Go to EC2 → Security Groups
+- Find your instance's security group
+- Add Inbound Rules for ports: 5000, 8501, 9090
+- Source: 0.0.0.0/0 (or your IP for security)
+
+**Check 4: Firewall**
+```bash
+# Check firewall status
+sudo firewall-cmd --list-all
+
+# If needed, open ports
+sudo firewall-cmd --permanent --add-port=5000/tcp
+sudo firewall-cmd --permanent --add-port=8501/tcp
+sudo firewall-cmd --permanent --add-port=9090/tcp
+sudo firewall-cmd --reload
+```
+
+### Test Script Shows Failures
+
+Run the verification script first:
+```bash
+./verify_setup.sh
+```
+
+This will tell you exactly what's missing.
+
+---
+
+## Next Steps After Installation
+
+Once everything is running:
+
+1. **Open the Web UI** at `http://YOUR-IP:8501`
+2. **Make some predictions** using the sliders
+3. **Check Prometheus** at `http://YOUR-IP:9090`
+4. **Test the API** with curl commands
+5. **Read the rest of this README** to understand the system
 
 ### Check If Everything Works
 
-Run this test script:
+Run this comprehensive test:
 ```bash
 ./test_everything.sh
 ```

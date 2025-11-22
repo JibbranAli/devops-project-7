@@ -19,20 +19,42 @@ WARNINGS=0
 
 # Get the IP address of the instance
 get_ip_address() {
-    # Try to get public IP from AWS metadata service
-    PUBLIC_IP=$(curl -s --connect-timeout 2 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "")
+    local ip=""
     
-    if [ -z "$PUBLIC_IP" ]; then
-        # If not on AWS, try to get primary network interface IP
-        PUBLIC_IP=$(hostname -I | awk '{print $1}')
+    # Method 1: Try AWS metadata service (works on EC2)
+    ip=$(curl -s --connect-timeout 2 --max-time 3 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "")
+    
+    if [ -n "$ip" ] && [ "$ip" != "127.0.0.1" ]; then
+        echo "$ip"
+        return
     fi
     
-    if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" == "127.0.0.1" ]; then
-        # Fallback to localhost
-        PUBLIC_IP="localhost"
+    # Method 2: Try to get public IP from external service
+    ip=$(curl -s --connect-timeout 2 --max-time 3 https://api.ipify.org 2>/dev/null || echo "")
+    
+    if [ -n "$ip" ] && [ "$ip" != "127.0.0.1" ]; then
+        echo "$ip"
+        return
     fi
     
-    echo "$PUBLIC_IP"
+    # Method 3: Get primary network interface IP
+    ip=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "")
+    
+    if [ -n "$ip" ] && [ "$ip" != "127.0.0.1" ]; then
+        echo "$ip"
+        return
+    fi
+    
+    # Method 4: Try ip command
+    ip=$(ip route get 1 2>/dev/null | awk '{print $7; exit}' || echo "")
+    
+    if [ -n "$ip" ] && [ "$ip" != "127.0.0.1" ]; then
+        echo "$ip"
+        return
+    fi
+    
+    # Fallback to localhost
+    echo "localhost"
 }
 
 # Print section header
