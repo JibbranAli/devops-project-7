@@ -124,11 +124,13 @@ main() {
     API_URL="http://${IP_ADDRESS}:5000"
     UI_URL="http://${IP_ADDRESS}:8501"
     PROM_URL="http://${IP_ADDRESS}:9090"
+    JENKINS_URL="http://${IP_ADDRESS}:8080"
     
     echo "Service URLs:"
     echo "  API:        $API_URL"
     echo "  UI:         $UI_URL"
     echo "  Prometheus: $PROM_URL"
+    echo "  Jenkins:    $JENKINS_URL"
     echo ""
     
     # Test 1: System Dependencies
@@ -220,6 +222,12 @@ main() {
                 print_result "PASS" "Prometheus container is running"
             else
                 print_result "FAIL" "Prometheus container is not running"
+            fi
+            
+            if docker-compose ps | grep -q "mlops-jenkins.*Up"; then
+                print_result "PASS" "Jenkins container is running"
+            else
+                print_result "WARN" "Jenkins container is not running (optional)"
             fi
         else
             print_result "FAIL" "Docker Compose services are not running - run: ./run_demo.sh"
@@ -326,8 +334,20 @@ main() {
         print_result "FAIL" "Latency metric not found"
     fi
     
-    # Test 8: Streamlit UI
-    print_header "Test 8: Streamlit UI"
+    # Test 8: Jenkins CI/CD
+    print_header "Test 8: Jenkins CI/CD"
+    
+    jenkins_response=$(curl -s -w "\n%{http_code}" --connect-timeout 5 "$JENKINS_URL/login" 2>/dev/null || echo -e "\n000")
+    jenkins_code=$(echo "$jenkins_response" | tail -n 1)
+    
+    if [ "$jenkins_code" == "200" ]; then
+        print_result "PASS" "Jenkins is accessible"
+    else
+        print_result "WARN" "Jenkins is not accessible (optional service)"
+    fi
+    
+    # Test 9: Streamlit UI
+    print_header "Test 9: Streamlit UI"
     
     ui_response=$(curl -s -w "\n%{http_code}" --connect-timeout 5 "$UI_URL" 2>/dev/null || echo -e "\n000")
     ui_code=$(echo "$ui_response" | tail -n 1)
@@ -338,8 +358,8 @@ main() {
         print_result "FAIL" "Streamlit UI is not accessible (HTTP $ui_code)"
     fi
     
-    # Test 9: Error Handling
-    print_header "Test 9: API Error Handling"
+    # Test 10: Error Handling
+    print_header "Test 10: API Error Handling"
     
     # Test missing features
     error_response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/predict" \
@@ -354,8 +374,8 @@ main() {
         print_result "WARN" "API error handling may not be working (got HTTP $error_code)"
     fi
     
-    # Test 10: Performance
-    print_header "Test 10: Performance Check"
+    # Test 11: Performance
+    print_header "Test 11: Performance Check"
     
     echo "Measuring API response time..."
     start_time=$(date +%s%N)
@@ -401,6 +421,7 @@ main() {
     echo "  Streamlit UI:  $UI_URL"
     echo "  Flask API:     $API_URL"
     echo "  Prometheus:    $PROM_URL"
+    echo "  Jenkins:       $JENKINS_URL"
     echo ""
     echo "Test the API:"
     echo "  curl -X POST $API_URL/predict \\"

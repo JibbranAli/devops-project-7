@@ -1,14 +1,10 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.9'
-            args '-u root:root'
-        }
-    }
+    agent any
     
     environment {
         DOCKER_REGISTRY = 'your-registry.example.com'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
+        PATH = "/usr/local/bin:$PATH"
     }
     
     stages {
@@ -53,23 +49,22 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 echo 'Building Docker images...'
-                script {
-                    // Build Flask API image
-                    sh """
-                        docker build -f docker/Dockerfile.api \
-                            -t mlops-flask-api:${IMAGE_TAG} \
-                            -t mlops-flask-api:latest \
-                            .
-                    """
+                sh '''
+                    # Build Flask API image
+                    docker build -f docker/Dockerfile.api \
+                        -t mlops-flask-api:${IMAGE_TAG} \
+                        -t mlops-flask-api:latest \
+                        .
                     
-                    // Build Streamlit UI image
-                    sh """
-                        docker build -f docker/Dockerfile.streamlit \
-                            -t mlops-streamlit-ui:${IMAGE_TAG} \
-                            -t mlops-streamlit-ui:latest \
-                            .
-                    """
-                }
+                    # Build Streamlit UI image
+                    docker build -f docker/Dockerfile.streamlit \
+                        -t mlops-streamlit-ui:${IMAGE_TAG} \
+                        -t mlops-streamlit-ui:latest \
+                        .
+                    
+                    echo "Docker images built successfully"
+                    docker images | grep mlops
+                '''
             }
         }
         
@@ -98,18 +93,21 @@ pipeline {
             steps {
                 echo 'Deploying services with Docker Compose...'
                 sh '''
-                    # Stop existing services
-                    docker-compose down || true
+                    # Stop existing services (except Jenkins)
+                    docker-compose stop flask-api streamlit-ui prometheus || true
+                    docker-compose rm -f flask-api streamlit-ui prometheus || true
                     
-                    # Start services
-                    docker-compose up -d
+                    # Start services (excluding Jenkins to avoid stopping ourselves)
+                    docker-compose up -d flask-api streamlit-ui prometheus
                     
                     # Wait for services to be healthy
                     echo "Waiting for services to start..."
-                    sleep 10
+                    sleep 15
                     
                     # Check service status
                     docker-compose ps
+                    
+                    echo "Deployment complete!"
                 '''
             }
         }

@@ -671,6 +671,15 @@ http://YOUR-PUBLIC-IP:9090
 - Query prediction counts, latency, errors
 - Monitor A/B test distribution
 
+### 4. Jenkins CI/CD (Optional)
+```
+http://YOUR-PUBLIC-IP:8080
+```
+- Automated testing and deployment
+- Build pipeline visualization
+- Build history and trends
+- **Setup:** See [JENKINS_SETUP.md](JENKINS_SETUP.md) for complete guide
+
 ### Getting Your Public IP
 
 **Method 1: Use Our Helper Script (Easiest)**
