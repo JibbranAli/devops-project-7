@@ -10,6 +10,8 @@ import time
 from datetime import datetime
 
 # Configuration
+# Use docker service name when running in containers
+# This works because both containers are on the same Docker network
 API_URL = "http://flask-api:5000"
 
 # Page config

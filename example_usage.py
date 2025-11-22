@@ -8,10 +8,30 @@ import requests
 import json
 import time
 import numpy as np
+import subprocess
 from datetime import datetime
 
+# Auto-detect IP address
+def get_api_url():
+    """Get the API URL with auto-detected IP address."""
+    try:
+        # Try AWS metadata service first
+        response = requests.get(
+            "http://169.254.169.254/latest/meta-data/public-ipv4",
+            timeout=2
+        )
+        if response.status_code == 200:
+            ip = response.text
+            return f"http://{ip}:5000"
+    except:
+        pass
+    
+    # Fallback to localhost
+    return "http://localhost:5000"
+
 # Configuration
-API_URL = "http://localhost:5000"
+API_URL = get_api_url()
+print(f"Using API URL: {API_URL}\n")
 
 def print_section(title):
     """Print a formatted section header."""
